@@ -3,38 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OMR 스캔본 PDF 변환기 (v5.0)</title>
-
+  <title>OMR PDF 변환기 (v6.0 · 파일명 카드)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
   <style>
     ::-webkit-scrollbar { width: 9px; height: 9px; }
     ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-    /* hover 시 돋보기 음영 오버레이 */
-    .magnify-area .zoom-overlay {
-      position: absolute; inset: 0;
-      background: rgba(15,23,42,0.0);
-      display: flex; align-items: center; justify-content: center;
-      opacity: 0; transition: opacity .18s ease;
-      pointer-events: none;
-    }
-    .magnify-area:hover .zoom-overlay {
-      background: rgba(15,23,42,0.35);
-      opacity: 1;
-    }
-    .zoom-overlay .zoom-icon {
-      width: 42px; height: 42px; border-radius: 9999px;
-      background: rgba(255,255,255,0.92); color: #4f46e5;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px; box-shadow: 0 4px 14px rgba(0,0,0,.3);
-      transform: scale(.8); transition: transform .18s ease;
-    }
-    .magnify-area:hover .zoom-overlay .zoom-icon { transform: scale(1); }
+    #lightbox-img { transform-origin: top center; } /* 확대 시 상단 고정 */
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
@@ -42,40 +20,34 @@
   <header class="bg-slate-900 text-white shadow-md px-6 py-4 sticky top-0 z-50">
     <div class="max-w-screen-2xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
       <div class="flex items-center gap-3">
-        <div class="bg-indigo-600 p-2.5 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/30">
-          <i class="fa-solid fa-file-pdf text-2xl"></i>
-        </div>
+        <div class="bg-indigo-600 p-2.5 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/30"><i class="fa-solid fa-file-pdf text-2xl"></i></div>
         <div>
           <h1 class="text-xl font-extrabold tracking-tight">OMR Scan-to-PDF</h1>
-          <p class="text-xs text-slate-400">370장 대량 처리 · 반별 그룹 분할 · NotebookLM 채점용 (v5.0)</p>
+          <p class="text-xs text-slate-400">파일명 카드 방식 · 반 시작/끝 지정 · NotebookLM 채점용 (v6.0)</p>
         </div>
       </div>
       <span class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full flex items-center gap-1.5">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        100% 로컬 처리 · 고속 엔진 v5.0
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>100% 로컬 처리 · v6.0
       </span>
     </div>
   </header>
 
   <main class="max-w-screen-2xl mx-auto p-4 md:p-6 flex-grow w-full flex flex-col gap-5">
 
-    <!-- Upload Zone -->
-    <div id="drop-zone" class="border-2 border-dashed border-slate-300 hover:border-indigo-500 bg-white rounded-xl p-4 text-center cursor-pointer transition-all duration-300 shadow-sm group">
-      <input type="file" id="file-input" multiple accept=".jpg, .jpeg, image/jpeg" class="hidden">
+    <!-- Upload -->
+    <div id="drop-zone" class="border-2 border-dashed border-slate-300 hover:border-indigo-500 bg-white rounded-xl p-4 text-center cursor-pointer transition shadow-sm group">
+      <input type="file" id="file-input" multiple accept=".jpg,.jpeg,image/jpeg" class="hidden">
       <div class="flex flex-row items-center justify-center gap-4">
-        <div class="w-11 h-11 flex-shrink-0 bg-slate-100 group-hover:bg-indigo-50 text-slate-400 group-hover:text-indigo-600 rounded-full flex items-center justify-center transition-all">
-          <i class="fa-solid fa-file-image text-xl"></i>
-        </div>
+        <div class="w-11 h-11 flex-shrink-0 bg-slate-100 group-hover:bg-indigo-50 text-slate-400 group-hover:text-indigo-600 rounded-full flex items-center justify-center transition"><i class="fa-solid fa-file-image text-xl"></i></div>
         <div class="text-left">
-          <p class="text-base font-semibold text-slate-700 group-hover:text-indigo-600 transition-colors">스캔 JPG를 드래그하거나 클릭하여 로드 (370장 한번에 OK)</p>
-          <p class="text-xs text-rose-500 font-medium">⚠️ .jpg / .jpeg 만 로드 · 1A,1B,2A,2B … 순서로 자동 정렬되고 A/B가 페어로 묶입니다.</p>
+          <p class="text-base font-semibold text-slate-700 group-hover:text-indigo-600">스캔 JPG를 드래그하거나 클릭하여 로드 (370장 한번에 OK)</p>
+          <p class="text-xs text-rose-500 font-medium">⚠️ .jpg/.jpeg 만 · 1A,1B,2A,2B… 자동 정렬 + A/B 페어링 · 카드엔 파일명 표시, 크게보기는 팝업</p>
         </div>
       </div>
     </div>
 
     <!-- Controls -->
     <div id="controls-section" class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hidden flex-col gap-4">
-      <!-- Row 1: 정보 + 그룹 생성 -->
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div class="flex flex-wrap items-center gap-3">
           <span class="text-sm font-medium text-slate-600">총 <strong id="total-count" class="text-slate-900">0</strong>장</span>
@@ -86,57 +58,50 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <div class="flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 px-2.5 py-1.5 rounded-lg text-xs">
-            <span class="font-bold text-indigo-700"><i class="fa-solid fa-layer-group"></i> 반(그룹) 수:</span>
+            <span class="font-bold text-indigo-700"><i class="fa-solid fa-layer-group"></i> 반 수:</span>
             <input type="number" id="group-count" value="8" min="1" max="10" class="w-14 text-center border border-indigo-200 rounded px-1.5 py-1 font-bold text-indigo-700 focus:outline-none">
             <button id="btn-make-groups" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1 rounded transition">그룹 생성</button>
           </div>
-          <button id="btn-auto-pair" class="bg-slate-700 hover:bg-slate-800 text-white text-xs font-bold px-3 py-2.5 rounded-lg shadow-sm flex items-center gap-2 transition">
-            <i class="fa-solid fa-arrow-down-a-z"></i> 재정렬
-          </button>
-          <button id="btn-clear-all" class="bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold px-3 py-2.5 rounded-lg border border-rose-200 flex items-center gap-2 transition">
-            <i class="fa-solid fa-trash-can"></i> 초기화
-          </button>
+          <button id="btn-auto-pair" class="bg-slate-700 hover:bg-slate-800 text-white text-xs font-bold px-3 py-2.5 rounded-lg flex items-center gap-2 transition"><i class="fa-solid fa-arrow-down-a-z"></i> 재정렬</button>
+          <button id="btn-clear-all" class="bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold px-3 py-2.5 rounded-lg border border-rose-200 flex items-center gap-2 transition"><i class="fa-solid fa-trash-can"></i> 초기화</button>
         </div>
       </div>
 
-      <!-- Row 2: 미리보기 크기 -->
       <div class="bg-slate-50 border border-slate-100 rounded-lg p-3 flex flex-wrap items-center gap-4">
-        <span class="text-xs font-bold text-slate-600 flex items-center gap-1.5"><i class="fa-solid fa-magnifying-glass-chart"></i> 미리보기 크기</span>
+        <span class="text-xs font-bold text-slate-600 flex items-center gap-1.5"><i class="fa-solid fa-table-cells"></i> 카드 크기</span>
         <div class="flex items-center gap-3 flex-grow max-w-sm">
           <i class="fa-solid fa-table-cells text-slate-400 text-xs"></i>
-          <input type="range" id="zoom-slider" min="2" max="12" value="8" step="1" class="flex-grow accent-indigo-600 cursor-pointer">
-          <i class="fa-solid fa-image text-slate-400"></i>
+          <input type="range" id="zoom-slider" min="2" max="12" value="6" step="1" class="flex-grow accent-indigo-600 cursor-pointer">
+          <i class="fa-solid fa-square text-slate-400"></i>
         </div>
-        <span class="text-xs font-bold text-indigo-600">한 줄 <span id="cols-indicator">8</span>개</span>
+        <span class="text-xs font-bold text-indigo-600">한 줄 <span id="cols-indicator">6</span>개</span>
       </div>
 
       <hr class="border-slate-100">
 
-      <!-- Row 3: 출력 설정 -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 items-end bg-emerald-50/40 p-4 rounded-lg border border-emerald-100">
         <div class="flex flex-col gap-2">
           <label class="text-xs font-bold text-slate-700 uppercase flex items-center gap-1"><i class="fa-solid fa-paragraph text-emerald-600"></i> 머릿말</label>
           <div class="flex items-center gap-3 bg-white p-2.5 rounded border border-slate-200 h-[42px]">
-            <input type="checkbox" id="chk-print-header" checked class="w-4 h-4 text-emerald-600 border-slate-300 rounded">
+            <input type="checkbox" id="chk-print-header" checked class="w-4 h-4 text-emerald-600 rounded">
             <label for="chk-print-header" class="text-sm font-medium text-slate-700 cursor-pointer select-none">각 페이지 상단에 파일명 인쇄</label>
           </div>
         </div>
         <div class="flex flex-col gap-2">
           <label class="text-xs font-bold text-slate-700 uppercase flex items-center gap-1"><i class="fa-solid fa-sliders text-emerald-600"></i> 출력 범위</label>
           <select id="export-mode" class="bg-white border border-slate-200 rounded px-3 py-2 text-sm font-medium w-full h-[42px]">
-            <option value="groups">★ 그룹(반)별로 각각 PDF 다운로드 ★</option>
+            <option value="groups">★ 그룹(반)별로 각각 PDF ★</option>
             <option value="all">전체를 하나의 PDF로</option>
             <option value="selected">선택된 항목만 하나의 PDF로</option>
           </select>
         </div>
-        <button id="btn-export-pdf" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-extrabold px-6 py-2.5 rounded-lg shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition h-[42px]">
-          <i class="fa-solid fa-file-export"></i>
-          <span id="btn-export-text">그룹별 PDF 출력</span>
+        <button id="btn-export-pdf" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-extrabold px-6 py-2.5 rounded-lg shadow-md flex items-center justify-center gap-2 transition h-[42px]">
+          <i class="fa-solid fa-file-export"></i><span id="btn-export-text">그룹별 PDF 출력</span>
         </button>
       </div>
     </div>
 
-    <!-- Sticky 일괄 이동 툴바 -->
+    <!-- Bulk toolbar -->
     <div id="bulk-toolbar" class="hidden sticky top-[76px] z-40 bg-slate-900 text-white rounded-xl shadow-xl px-4 py-3 flex-wrap items-center gap-3">
       <span class="text-sm font-bold flex items-center gap-2"><i class="fa-solid fa-check-double text-emerald-400"></i> 선택 <span id="bulk-sel-count" class="text-emerald-400">0</span>장 (페어 자동 포함)</span>
       <div class="h-5 w-[1px] bg-slate-600"></div>
@@ -149,24 +114,19 @@
 
     <!-- Workspace -->
     <div id="workspace-section" class="hidden flex-col gap-4 flex-grow">
-      <!-- 미배정 풀 -->
       <section class="bg-white border-2 border-amber-200 rounded-xl shadow-sm overflow-hidden">
         <div class="bg-amber-50 px-4 py-2.5 flex items-center justify-between border-b border-amber-200">
           <div class="flex items-center gap-2">
             <i class="fa-solid fa-inbox text-amber-600"></i>
             <h3 class="text-sm font-extrabold text-amber-800">미배정 (Unassigned)</h3>
-            <span class="text-xs bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold pool-count">0</span>
+            <span class="text-xs bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold pool-count" data-count-for="__unassigned">0</span>
           </div>
-          <div class="flex items-center gap-2">
-            <button class="sel-pool-all text-[11px] font-bold text-amber-700 hover:text-amber-900 bg-white border border-amber-300 px-2 py-1 rounded transition" data-group="__unassigned">이 영역 전체선택</button>
-          </div>
+          <button class="sel-pool-all text-[11px] font-bold text-amber-700 hover:text-amber-900 bg-white border border-amber-300 px-2 py-1 rounded transition" data-group="__unassigned">이 영역 전체선택</button>
         </div>
-        <div class="p-3 max-h-[42vh] overflow-y-auto">
+        <div class="p-3 max-h-[44vh] overflow-y-auto">
           <div class="grid gap-3 group-grid" data-group="__unassigned"></div>
         </div>
       </section>
-
-      <!-- 그룹 컨테이너들이 여기에 동적 생성 -->
       <div id="groups-wrapper" class="flex flex-col gap-4"></div>
     </div>
 
@@ -177,21 +137,13 @@
     </div>
   </main>
 
-  <!-- Progress Modal -->
+  <!-- Progress -->
   <div id="progress-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] hidden flex-col items-center justify-center p-4">
     <div class="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center flex flex-col gap-4">
-      <div class="relative w-20 h-20 mx-auto">
-        <div class="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>
-        <div class="absolute inset-0 border-4 border-t-indigo-600 rounded-full animate-spin"></div>
-      </div>
+      <div class="relative w-20 h-20 mx-auto"><div class="absolute inset-0 border-4 border-indigo-100 rounded-full"></div><div class="absolute inset-0 border-4 border-t-indigo-600 rounded-full animate-spin"></div></div>
       <h4 id="progress-title" class="text-lg font-extrabold text-slate-800">처리 중...</h4>
-      <div class="w-full bg-slate-100 rounded-full h-3.5 overflow-hidden border border-slate-200">
-        <div id="progress-bar" class="bg-indigo-600 h-full w-[0%] transition-all duration-200"></div>
-      </div>
-      <div class="flex justify-between items-center text-xs font-bold text-slate-500">
-        <span id="progress-percent">0%</span>
-        <span id="progress-status">0 / 0</span>
-      </div>
+      <div class="w-full bg-slate-100 rounded-full h-3.5 overflow-hidden border border-slate-200"><div id="progress-bar" class="bg-indigo-600 h-full w-[0%] transition-all duration-200"></div></div>
+      <div class="flex justify-between items-center text-xs font-bold text-slate-500"><span id="progress-percent">0%</span><span id="progress-status">0 / 0</span></div>
     </div>
   </div>
 
@@ -204,23 +156,35 @@
       </div>
       <button id="btn-close-lightbox" class="text-white hover:text-rose-400 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition text-lg"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    <div class="flex-grow flex items-center justify-center overflow-hidden max-w-5xl mx-auto w-full relative">
-      <button id="btn-prev-lightbox" class="absolute left-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition hover:scale-105 text-lg z-10"><i class="fa-solid fa-chevron-left"></i></button>
-      <img id="lightbox-img" src="" alt="OMR" class="max-h-[78vh] max-w-full object-contain rounded-lg shadow-2xl border border-white/10 transition-transform duration-200">
-      <button id="btn-next-lightbox" class="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition hover:scale-105 text-lg z-10"><i class="fa-solid fa-chevron-right"></i></button>
+    <div class="flex-grow flex items-center justify-center overflow-auto max-w-5xl mx-auto w-full relative">
+      <button id="btn-prev-lightbox" class="fixed left-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition text-lg z-20"><i class="fa-solid fa-chevron-left"></i></button>
+      <img id="lightbox-img" src="" alt="OMR" class="max-w-full object-contain rounded-lg shadow-2xl border border-white/10">
+      <div id="lightbox-fallback" class="hidden text-center text-white p-10">
+        <i class="fa-solid fa-image text-6xl text-slate-600 mb-4"></i>
+        <p class="text-lg font-bold" id="fallback-name"></p>
+        <p class="text-xs text-slate-400 mt-2">이 환경에서는 이미지 미리보기가 제한됩니다.<br>PDF 출력은 정상 작동합니다.</p>
+      </div>
+      <button id="btn-next-lightbox" class="fixed right-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition text-lg z-20"><i class="fa-solid fa-chevron-right"></i></button>
     </div>
-    <!-- 라이트박스 하단 컨트롤: 줌 + ✂️ 그룹 나누기 -->
     <div class="flex flex-col items-center gap-2 py-3 max-w-3xl mx-auto w-full">
       <div class="flex items-center justify-center gap-2 text-white text-xs">
         <button id="btn-zoom-out" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 transition"><i class="fa-solid fa-magnifying-glass-minus"></i> 축소</button>
         <button id="btn-zoom-reset" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 transition">100%</button>
         <button id="btn-zoom-in" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 transition"><i class="fa-solid fa-magnifying-glass-plus"></i> 확대</button>
       </div>
-      <div class="flex items-center justify-center gap-2 bg-slate-900/70 border border-indigo-500/30 rounded-xl px-3 py-2 w-full flex-wrap">
-        <span class="text-[11px] text-indigo-300 font-bold"><i class="fa-solid fa-scissors"></i> 여기(현재 카드)부터 새 그룹으로:</span>
-        <div id="lightbox-split-buttons" class="flex flex-wrap items-center gap-1.5"></div>
+      <!-- 반 시작/끝 지정 -->
+      <div class="flex flex-col items-center gap-2 bg-slate-900/70 border border-indigo-500/30 rounded-xl px-3 py-2.5 w-full">
+        <div id="range-status" class="text-[12px] text-emerald-300 font-bold min-h-[18px]">반 구간 지정: 시작 버튼을 누르고 → 넘긴 뒤 → 종료 버튼</div>
+        <div class="flex items-center gap-2 flex-wrap justify-center">
+          <span class="text-[11px] text-indigo-300 font-bold mr-1"><i class="fa-solid fa-flag"></i> 시작:</span>
+          <div id="lightbox-start-buttons" class="flex flex-wrap items-center gap-1"></div>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap justify-center">
+          <span class="text-[11px] text-rose-300 font-bold mr-1"><i class="fa-solid fa-flag-checkered"></i> 종료:</span>
+          <div id="lightbox-end-buttons" class="flex flex-wrap items-center gap-1"></div>
+        </div>
       </div>
-      <p class="text-[11px] text-slate-500">← → 화살표로 넘기며 반이 바뀌는 지점을 찾아 위 버튼으로 분할하세요. (A/B 페어 자동 포함)</p>
+      <p class="text-[11px] text-slate-500">← → 화살표로 넘김(확대 유지) · 시작·종료로 한 반 구간 확정 (A/B 페어 자동 포함)</p>
     </div>
   </div>
 
@@ -230,24 +194,14 @@
     <span id="toast-text" class="text-sm font-semibold"></span>
   </div>
 
-  <footer class="bg-slate-950 text-slate-500 text-xs py-5 text-center border-t border-slate-900 mt-auto">
-    <p>© 2026 OMR-to-PDF Pipeline v5.0 · Optimized for NotebookLM</p>
-  </footer>
+  <footer class="bg-slate-950 text-slate-500 text-xs py-5 text-center border-t border-slate-900 mt-auto"><p>© 2026 OMR-to-PDF Pipeline v6.0</p></footer>
 
   <script>
-    /* ===== 상태 =====
-       files: [{id, file, name, dataUrl(blob), prefix, isFront, isBack, pairId, pairStatus, group}]
-       group: '__unassigned' 또는 'g0','g1'... 
-       groups: [{key, label}]
-    */
     const state = {
-      files: [],
-      order: [],                 // 전체 시각 순서(id 배열) — 라이트박스 네비게이션 기준
-      selectedIds: new Set(),
-      groups: [],                // [{key:'g0', label:'1반'}]
-      cols: 8,
-      lightboxIdx: 0,
-      zoom: 1.0
+      files: [], selectedIds: new Set(), groups: [], cols: 6,
+      lbIds: [], lightboxIdx: 0, zoom: 1,
+      lastClickedId: null,        // Shift 범위선택 기준
+      rangeStart: null            // {groupKey, id} 반 시작 지정 상태
     };
 
     const el = {};
@@ -256,12 +210,11 @@
      'btn-clear-all','zoom-slider','cols-indicator','chk-print-header','export-mode','btn-export-pdf',
      'btn-export-text','progress-modal','progress-bar','progress-percent','progress-status','progress-title',
      'toast-message','toast-text','toast-icon','bulk-toolbar','bulk-sel-count','bulk-move-buttons',
-     'btn-move-unassigned','btn-clear-sel','lightbox-modal','lightbox-img','lightbox-filename','lightbox-meta',
-     'btn-close-lightbox','btn-prev-lightbox','btn-next-lightbox','btn-zoom-in','btn-zoom-out','btn-zoom-reset',
-     'lightbox-split-buttons'
+     'btn-move-unassigned','btn-clear-sel','lightbox-modal','lightbox-img','lightbox-fallback','fallback-name',
+     'lightbox-filename','lightbox-meta','btn-close-lightbox','btn-prev-lightbox','btn-next-lightbox',
+     'btn-zoom-in','btn-zoom-out','btn-zoom-reset','lightbox-start-buttons','lightbox-end-buttons','range-status'
     ].forEach(id => { el[id.replace(/-([a-z])/g,(m,c)=>c.toUpperCase())] = document.getElementById(id); });
-    el.toast = el.toastMessage;
-    el.btnPrintHeader = el.chkPrintHeader;
+    el.toast = el.toastMessage; el.btnPrintHeader = el.chkPrintHeader;
 
     window.onload = () => { setupEvents(); makeGroups(8); applyCols(); };
 
@@ -274,29 +227,21 @@
 
       el.btnMakeGroups.addEventListener('click', () => {
         const n = Math.max(1, Math.min(10, parseInt(el.groupCount.value)||8));
-        el.groupCount.value = n;
-        makeGroups(n);
-        renderAll();
-        showToast(`${n}개 그룹을 생성했습니다.`, 'success');
+        el.groupCount.value = n; makeGroups(n); renderAll();
+        showToast(`${n}개 그룹 생성`, 'success');
       });
-      el.btnAutoPair.addEventListener('click', () => { autoPairAndSort(); showToast('전체 재정렬 완료 (A/B 페어 순).', 'success'); });
+      el.btnAutoPair.addEventListener('click', () => { autoPairAndSort(); showToast('재정렬 완료', 'success'); });
       el.btnClearAll.addEventListener('click', clearAll);
-      el.btnExportPdf.addEventListener('click', startPdfGeneration);
-
+      el.btnExportPdf.addEventListener('click', startPdf);
       el.exportMode.addEventListener('change', () => {
-        const v = el.exportMode.value;
-        el.btnExportText.textContent = v==='groups' ? '그룹별 PDF 출력' : (v==='selected' ? '선택 항목 PDF 출력' : '전체 PDF 출력');
+        const v=el.exportMode.value;
+        el.btnExportText.textContent = v==='groups'?'그룹별 PDF 출력':(v==='selected'?'선택 항목 PDF 출력':'전체 PDF 출력');
       });
-
-      el.zoomSlider.addEventListener('input', () => { state.cols = parseInt(el.zoomSlider.value); el.colsIndicator.textContent = state.cols; applyCols(); });
-
+      el.zoomSlider.addEventListener('input', () => { state.cols=parseInt(el.zoomSlider.value); el.colsIndicator.textContent=state.cols; applyCols(); });
       el.btnClearSel.addEventListener('click', () => { state.selectedIds.clear(); refreshSelectionUI(); });
       el.btnMoveUnassigned.addEventListener('click', () => moveSelectedToGroup('__unassigned'));
-
-      // 미배정 영역 전체선택
       document.querySelectorAll('.sel-pool-all').forEach(b => b.addEventListener('click', () => selectAllInGroup(b.dataset.group)));
 
-      // Lightbox
       el.btnCloseLightbox.addEventListener('click', closeLightbox);
       el.btnPrevLightbox.addEventListener('click', () => navLightbox(-1));
       el.btnNextLightbox.addEventListener('click', () => navLightbox(1));
@@ -307,116 +252,71 @@
       document.addEventListener('keydown', e => {
         if (el.lightboxModal.classList.contains('hidden')) return;
         if (e.key==='Escape') closeLightbox();
-        if (e.key==='ArrowLeft') navLightbox(-1);
-        if (e.key==='ArrowRight') navLightbox(1);
+        if (e.key==='ArrowLeft') { e.preventDefault(); navLightbox(-1); }
+        if (e.key==='ArrowRight') { e.preventDefault(); navLightbox(1); }
+        if (e.key==='+'||e.key==='=') { if(state.zoom<3){state.zoom+=0.25; applyZoom();} }
+        if (e.key==='-') { if(state.zoom>0.5){state.zoom-=0.25; applyZoom();} }
       });
     }
 
-    function applyCols() {
-      document.querySelectorAll('.group-grid').forEach(g => g.style.gridTemplateColumns = `repeat(${state.cols}, minmax(0,1fr))`);
+    function applyCols(){ document.querySelectorAll('.group-grid').forEach(g => g.style.gridTemplateColumns=`repeat(${state.cols}, minmax(0,1fr))`); }
+
+    function makeGroups(n){
+      const ng=[]; for(let i=0;i<n;i++) ng.push({key:'g'+i,label:(i+1)+'반'});
+      const valid=new Set(ng.map(g=>g.key));
+      state.files.forEach(f=>{ if(f.group&&f.group!=='__unassigned'&&!valid.has(f.group)) f.group='__unassigned'; });
+      state.groups=ng;
     }
 
-    /* ===== 그룹 생성 ===== */
-    function makeGroups(n) {
-      // 기존 그룹에 있던 카드는 미배정으로 회수
-      state.files.forEach(f => { if (f.group && f.group.startsWith('g')) {
-        const stillExists = false; f.group = f.group; // placeholder
-      }});
-      const newGroups = [];
-      for (let i=0;i<n;i++) newGroups.push({ key:'g'+i, label:(i+1)+'반' });
-      // 존재하지 않는 그룹에 속한 카드는 미배정으로
-      const validKeys = new Set(newGroups.map(g=>g.key));
-      state.files.forEach(f => { if (f.group && f.group!=='__unassigned' && !validKeys.has(f.group)) f.group='__unassigned'; });
-      state.groups = newGroups;
-    }
-
-    /* ===== 파일 로드 ===== */
-    function handleFiles(filesList) {
-      const jpgs = Array.from(filesList).filter(f => {
-        const n=f.name.toLowerCase();
-        return (n.endsWith('.jpg')||n.endsWith('.jpeg')||f.type==='image/jpeg') && f.size>0;
+    function handleFiles(list){
+      const jpgs=Array.from(list).filter(f=>{const n=f.name.toLowerCase();return (n.endsWith('.jpg')||n.endsWith('.jpeg')||f.type==='image/jpeg')&&f.size>0;});
+      const ignored=list.length-jpgs.length;
+      if(!jpgs.length){ showToast('JPG가 없습니다.','error'); return; }
+      jpgs.sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}));
+      const loaded=jpgs.map(file=>{
+        const info=parseFilename(file.name);
+        return { id:'omr_'+Math.random().toString(36).substr(2,9), file, name:file.name,
+          dataUrl:URL.createObjectURL(file), prefix:info.prefix, isFront:info.isFront, isBack:info.isBack,
+          pairStatus:'lonely', group:'__unassigned' };
       });
-      const ignored = filesList.length - jpgs.length;
-      if (!jpgs.length) { showToast('분석 가능한 JPG가 없습니다.','error'); return; }
-
-      jpgs.sort((a,b)=> a.name.localeCompare(b.name, undefined, {numeric:true, sensitivity:'base'}));
-      const loaded = jpgs.map(file => {
-        const info = parseFilename(file.name);
-        return {
-          id:'omr_'+Math.random().toString(36).substr(2,9),
-          file, name:file.name,
-          dataUrl: URL.createObjectURL(file),   // Blob URL = 가볍고 빠름
-          prefix:info.prefix, isFront:info.isFront, isBack:info.isBack,
-          pairStatus:'lonely', group:'__unassigned'
-        };
-      });
-      state.files = [...state.files, ...loaded];
-      autoPairAndSort();   // 정렬 + 페어 + 렌더
-      showToast(ignored>0 ? `JPG ${loaded.length}장 추가 (그 외 ${ignored}개 제외)` : `${loaded.length}장 탑재 완료`, 'success');
+      state.files=[...state.files,...loaded];
+      autoPairAndSort();
+      showToast(ignored>0?`JPG ${loaded.length}장 추가 (그 외 ${ignored}개 제외)`:`${loaded.length}장 탑재 완료`,'success');
     }
 
-    function parseFilename(name) {
+    function parseFilename(name){
       const base=(name.substring(0,name.lastIndexOf('.'))||name);
-      const frontRe=/[ _\-\.]?[aA](?:\d+)?$/, backRe=/[ _\-\.]?[bB](?:\d+)?$/;
-      const isBack=backRe.test(base);
-      const isFront=!isBack && frontRe.test(base);
-      let prefix=base;
-      if(isFront) prefix=base.replace(frontRe,'');
-      else if(isBack) prefix=base.replace(backRe,'');
-      return { prefix:prefix.trim(), isFront:isFront||(!isBack), isBack };
+      const fr=/[ _\-\.]?[aA](?:\d+)?$/, br=/[ _\-\.]?[bB](?:\d+)?$/;
+      const isBack=br.test(base), isFront=!isBack&&fr.test(base);
+      let prefix=base; if(isFront)prefix=base.replace(fr,''); else if(isBack)prefix=base.replace(br,'');
+      return {prefix:prefix.trim(), isFront:isFront||(!isBack), isBack};
     }
 
-    /* ===== 정렬 + 페어 분석 ===== */
-    function autoPairAndSort() {
-      const groups={};
-      state.files.forEach(f=>{
-        if(!groups[f.prefix]) groups[f.prefix]={front:null,back:null,orphans:[]};
-        if(f.isBack) groups[f.prefix].back=f;
-        else if(f.isFront) groups[f.prefix].front=f;
-        else groups[f.prefix].orphans.push(f);
-      });
-      const sortedP=Object.keys(groups).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:'base'}));
-      const list=[];
-      sortedP.forEach(p=>{ const g=groups[p]; if(g.front)list.push(g.front); if(g.back)list.push(g.back); g.orphans.forEach(o=>list.push(o)); });
-      state.files=list;
-      analyzePairs();
-      renderAll();
+    function autoPairAndSort(){
+      const g={};
+      state.files.forEach(f=>{ if(!g[f.prefix])g[f.prefix]={front:null,back:null,orphans:[]}; if(f.isBack)g[f.prefix].back=f; else if(f.isFront)g[f.prefix].front=f; else g[f.prefix].orphans.push(f); });
+      const sp=Object.keys(g).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:'base'}));
+      const list=[]; sp.forEach(p=>{const x=g[p]; if(x.front)list.push(x.front); if(x.back)list.push(x.back); x.orphans.forEach(o=>list.push(o));});
+      state.files=list; analyzePairs(); renderAll();
     }
-
-    function analyzePairs() {
-      for(let i=0;i<state.files.length;i++){
-        const cur=state.files[i];
-        if(cur.isFront && !cur.isBack){
-          const nx=state.files[i+1];
-          cur.pairStatus=(nx && nx.isBack && nx.prefix===cur.prefix)?'paired-start':'lonely';
-        } else if(cur.isBack){
-          const pv=state.files[i-1];
-          cur.pairStatus=(pv && pv.isFront && pv.prefix===cur.prefix)?'paired-end':'lonely';
-        } else cur.pairStatus='lonely';
-      }
+    function analyzePairs(){
+      for(let i=0;i<state.files.length;i++){const c=state.files[i];
+        if(c.isFront&&!c.isBack){const n=state.files[i+1]; c.pairStatus=(n&&n.isBack&&n.prefix===c.prefix)?'paired-start':'lonely';}
+        else if(c.isBack){const p=state.files[i-1]; c.pairStatus=(p&&p.isFront&&p.prefix===c.prefix)?'paired-end':'lonely';}
+        else c.pairStatus='lonely';}
     }
+    function getPairPartner(f){ return state.files.find(x=>x.id!==f.id&&x.prefix===f.prefix&&((f.isFront&&x.isBack)||(f.isBack&&x.isFront))); }
 
-    // 페어 파트너 찾기 (prefix 같은 A↔B)
-    function getPairPartner(f) {
-      return state.files.find(x => x.id!==f.id && x.prefix===f.prefix &&
-        ((f.isFront && x.isBack) || (f.isBack && x.isFront)));
-    }
+    function renderAll(){
+      const has=state.files.length>0;
+      el.emptyState.classList.toggle('hidden',has);
+      el.controlsSection.classList.toggle('hidden',!has); el.controlsSection.classList.toggle('flex',has);
+      el.workspaceSection.classList.toggle('hidden',!has); el.workspaceSection.classList.toggle('flex',has);
 
-    /* ===== 전체 렌더 (그룹 생성/로드/재정렬 시에만 호출) ===== */
-    function renderAll() {
-      const has = state.files.length>0;
-      el.emptyState.classList.toggle('hidden', has);
-      el.controlsSection.classList.toggle('hidden', !has);
-      el.controlsSection.classList.toggle('flex', has);
-      el.workspaceSection.classList.toggle('hidden', !has);
-      el.workspaceSection.classList.toggle('flex', has);
-
-      // 그룹 컨테이너 DOM 구성
       el.groupsWrapper.innerHTML='';
       state.groups.forEach(g=>{
         const sec=document.createElement('section');
         sec.className='bg-white border-2 border-slate-200 rounded-xl shadow-sm overflow-hidden';
-        sec.dataset.groupKey=g.key;
         sec.innerHTML=`
           <div class="bg-slate-50 px-4 py-2.5 flex items-center justify-between border-b border-slate-200">
             <div class="flex items-center gap-2">
@@ -426,371 +326,275 @@
             </div>
             <button class="sel-pool-all text-[11px] font-bold text-indigo-700 hover:text-indigo-900 bg-white border border-indigo-200 px-2 py-1 rounded transition" data-group="${g.key}">이 영역 전체선택</button>
           </div>
-          <div class="p-3 min-h-[80px] max-h-[42vh] overflow-y-auto">
-            <div class="grid gap-3 group-grid" data-group="${g.key}"></div>
-          </div>`;
+          <div class="p-3 min-h-[70px] max-h-[40vh] overflow-y-auto"><div class="grid gap-3 group-grid" data-group="${g.key}"></div></div>`;
         el.groupsWrapper.appendChild(sec);
       });
+      el.groupsWrapper.querySelectorAll('[data-label-for]').forEach(inp=>inp.addEventListener('change',()=>{const g=state.groups.find(x=>x.key===inp.dataset.labelFor); if(g)g.label=inp.value.trim()||g.label; buildBulkButtons(); buildRangeButtons();}));
+      el.groupsWrapper.querySelectorAll('.sel-pool-all').forEach(b=>b.addEventListener('click',()=>selectAllInGroup(b.dataset.group)));
 
-      // 라벨 수정 이벤트
-      el.groupsWrapper.querySelectorAll('[data-label-for]').forEach(inp=>{
-        inp.addEventListener('change',()=>{ const g=state.groups.find(x=>x.key===inp.dataset.labelFor); if(g) g.label=inp.value.trim()||g.label; buildBulkButtons(); buildSplitButtons(); });
-      });
-      // 전체선택 버튼 이벤트
-      el.groupsWrapper.querySelectorAll('.sel-pool-all').forEach(b=> b.addEventListener('click', ()=>selectAllInGroup(b.dataset.group)));
+      const map={'__unassigned':document.querySelector('.group-grid[data-group="__unassigned"]')};
+      state.groups.forEach(g=>map[g.key]=document.querySelector(`.group-grid[data-group="${g.key}"]`));
+      state.files.forEach((f,i)=>{ const c=buildCard(f,i); (map[f.group]||map['__unassigned']).appendChild(c); });
 
-      // 카드 DOM 생성 후 각 그룹/미배정 grid에 배치
-      const gridMap = {};
-      gridMap['__unassigned'] = document.querySelector('.group-grid[data-group="__unassigned"]');
-      state.groups.forEach(g => gridMap[g.key] = document.querySelector(`.group-grid[data-group="${g.key}"]`));
-
-      // state.order = 현재 files 순서 기준 id 배열
-      state.order = state.files.map(f=>f.id);
-
-      state.files.forEach((f, idx) => {
-        const card = buildCard(f, idx);
-        const grid = gridMap[f.group] || gridMap['__unassigned'];
-        grid.appendChild(card);
-      });
-
-      applyCols();
-      buildBulkButtons();
-      refreshCounts();
-      refreshSelectionUI();
+      applyCols(); buildBulkButtons(); refreshCounts(); refreshSelectionUI();
     }
 
-    /* ===== 카드 DOM 1개 생성 ===== */
-    function buildCard(f, idx) {
+    // ★ 파일명 카드 (썸네일 없음)
+    function buildCard(f,idx){
       const card=document.createElement('div');
-      card.className='omr-card group/card relative border-2 rounded-xl overflow-hidden shadow-sm flex flex-col transition-all duration-150 select-none bg-white border-slate-200';
+      card.className='omr-card relative border-2 rounded-xl overflow-hidden shadow-sm flex flex-col transition-all duration-150 select-none bg-white border-slate-200 cursor-pointer';
       card.dataset.id=f.id;
+      const pairColor = f.pairStatus==='lonely' ? 'bg-amber-50' : (f.isBack ? 'bg-emerald-50/60' : 'bg-sky-50/50');
       card.innerHTML=`
-        <div class="magnify-area relative aspect-[3/4] bg-slate-100 overflow-hidden cursor-pointer">
-          ![omr](${f.dataUrl})
-          <span class="card-index absolute top-2 left-2 bg-slate-900/70 text-white text-[11px] font-bold px-2 py-0.5 rounded backdrop-blur-sm z-10 pointer-events-none">${idx+1}</span>
-          <div class="absolute top-2 right-2 z-30">
-            <input type="checkbox" class="card-chk w-5 h-5 text-indigo-600 border-slate-300 rounded cursor-pointer">
-          </div>
-          <div class="zoom-overlay"><div class="zoom-icon"><i class="fa-solid fa-magnifying-glass"></i></div></div>
+        <div class="card-body relative ${pairColor} px-2 pt-7 pb-2 flex flex-col items-center justify-center gap-1.5 min-h-[110px]">
+          <span class="card-index absolute top-1.5 left-1.5 bg-slate-900/80 text-white text-[11px] font-bold px-2 py-0.5 rounded">${idx+1}</span>
+          <div class="absolute top-1.5 right-1.5 z-30"><input type="checkbox" class="card-chk w-5 h-5 text-indigo-600 rounded cursor-pointer"></div>
+          <i class="fa-regular fa-file-image text-2xl text-slate-400"></i>
+          <p class="filename-text text-[11px] font-bold text-slate-700 text-center break-all leading-tight line-clamp-2" title="${f.name}">${f.name}</p>
+          <span class="pair-badge text-[9px] font-extrabold px-1.5 py-0.5 rounded"></span>
         </div>
-        <div class="p-2 flex flex-col gap-1 border-t border-slate-100">
-          <p class="text-[11px] font-bold text-slate-700 truncate" title="${f.name}">${f.name}</p>
-          <div class="flex items-center justify-between">
-            <span class="pair-badge text-[9px] font-extrabold px-1.5 py-0.5 rounded"></span>
-          </div>
-        </div>`;
-      // 페어 뱃지
+        <button class="view-btn w-full bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-500 text-[10px] font-bold py-1 transition flex items-center justify-center gap-1 border-t border-slate-200"><i class="fa-solid fa-magnifying-glass"></i> 크게보기</button>`;
       setPairBadge(card.querySelector('.pair-badge'), f.pairStatus);
-      // 클릭: 오버레이/이미지 → 라이트박스 / 체크박스 → 선택
-      const area=card.querySelector('.magnify-area');
-      area.addEventListener('click', e=>{ if(e.target.classList.contains('card-chk')) return; openLightbox(f.id); });
+      // 카드 본문 클릭 = 선택 (Shift 범위선택 지원)
+      card.querySelector('.card-body').addEventListener('click', e=>{ if(e.target.classList.contains('card-chk'))return; handleCardClick(f.id, e.shiftKey); });
       const chk=card.querySelector('.card-chk');
-      chk.checked = state.selectedIds.has(f.id);
-      chk.addEventListener('click', e=>{ e.stopPropagation(); toggleSelect(f.id); });
-      // 선택 시 강조
+      chk.checked=state.selectedIds.has(f.id);
+      chk.addEventListener('click', e=>{ e.stopPropagation(); handleCardClick(f.id, e.shiftKey); });
+      card.querySelector('.view-btn').addEventListener('click', e=>{ e.stopPropagation(); openLightbox(f.id); });
       if(state.selectedIds.has(f.id)) card.classList.add('ring-2','ring-indigo-500','border-indigo-500');
       return card;
     }
-
-    function setPairBadge(span, status){
-      if(status==='paired-start'){ span.className='pair-badge text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-500 text-white'; span.innerHTML='<i class="fa-solid fa-lock"></i> 앞(A)'; }
-      else if(status==='paired-end'){ span.className='pair-badge text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-600 text-white'; span.innerHTML='<i class="fa-solid fa-lock"></i> 뒤(B)'; }
-      else { span.className='pair-badge text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500 text-white'; span.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> 무페어'; }
+    function setPairBadge(span,s){
+      if(s==='paired-start'){span.className='pair-badge text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-500 text-white'; span.innerHTML='<i class="fa-solid fa-lock"></i> 앞(A)';}
+      else if(s==='paired-end'){span.className='pair-badge text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-600 text-white'; span.innerHTML='<i class="fa-solid fa-lock"></i> 뒤(B)';}
+      else{span.className='pair-badge text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500 text-white'; span.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> 무페어';}
     }
 
-    /* ===== 선택 (부분 DOM 갱신 — 재렌더 없음!) ===== */
-    function toggleSelect(id) {
+    /* ★ Shift 범위선택 */
+    function handleCardClick(id, shift){
+      if(shift && state.lastClickedId){
+        const order=visualOrderIds();
+        const a=order.indexOf(state.lastClickedId), b=order.indexOf(id);
+        if(a>=0 && b>=0){
+          const [s,e]=a<b?[a,b]:[b,a];
+          for(let i=s;i<=e;i++){ const fid=order[i]; state.selectedIds.add(fid); const f=state.files.find(x=>x.id===fid); if(f){const p=getPairPartner(f); if(p)state.selectedIds.add(p.id);} }
+          syncAllSelVisual(); refreshSelectionUI();
+          state.lastClickedId=id;
+          return;
+        }
+      }
+      // 일반 토글
       if(state.selectedIds.has(id)) state.selectedIds.delete(id);
       else state.selectedIds.add(id);
-      updateCardSelVisual(id);
-      refreshSelectionUI();
+      // 페어 동반 토글
+      const f=state.files.find(x=>x.id===id);
+      if(f){ const p=getPairPartner(f); if(p){ if(state.selectedIds.has(id)) state.selectedIds.add(p.id); else state.selectedIds.delete(p.id);} }
+      state.lastClickedId=id;
+      syncAllSelVisual(); refreshSelectionUI();
     }
-    function updateCardSelVisual(id){
-      const card=document.querySelector(`.omr-card[data-id="${id}"]`);
-      if(!card) return;
-      const on=state.selectedIds.has(id);
-      card.classList.toggle('ring-2',on);
-      card.classList.toggle('ring-indigo-500',on);
-      card.classList.toggle('border-indigo-500',on);
-      const chk=card.querySelector('.card-chk'); if(chk) chk.checked=on;
-    }
-    function selectAllInGroup(groupKey){
-      state.files.filter(f=>f.group===groupKey).forEach(f=>{ state.selectedIds.add(f.id); updateCardSelVisual(f.id); });
-      refreshSelectionUI();
-    }
-    function refreshSelectionUI(){
-      // 선택 카드 시각 동기화(체크 해제된 것 반영)
+
+    function syncAllSelVisual(){
       document.querySelectorAll('.omr-card').forEach(c=>{
         const on=state.selectedIds.has(c.dataset.id);
-        const chk=c.querySelector('.card-chk'); if(chk) chk.checked=on;
+        const chk=c.querySelector('.card-chk'); if(chk)chk.checked=on;
         c.classList.toggle('ring-2',on); c.classList.toggle('ring-indigo-500',on); c.classList.toggle('border-indigo-500',on);
       });
+    }
+    function selectAllInGroup(gk){ state.files.filter(f=>f.group===gk).forEach(f=>state.selectedIds.add(f.id)); syncAllSelVisual(); refreshSelectionUI(); }
+    function refreshSelectionUI(){
       el.selectedCount.textContent=state.selectedIds.size;
       el.bulkSelCount.textContent=state.selectedIds.size;
-      el.bulkToolbar.classList.toggle('hidden', state.selectedIds.size===0);
-      el.bulkToolbar.classList.toggle('flex', state.selectedIds.size>0);
+      el.bulkToolbar.classList.toggle('hidden',state.selectedIds.size===0);
+      el.bulkToolbar.classList.toggle('flex',state.selectedIds.size>0);
     }
 
-    /* ===== 일괄 이동 버튼 ===== */
     function buildBulkButtons(){
       el.bulkMoveButtons.innerHTML='';
-      state.groups.forEach(g=>{
-        const b=document.createElement('button');
-        b.className='text-xs bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded font-bold transition';
-        b.textContent=g.label;
-        b.addEventListener('click',()=>moveSelectedToGroup(g.key));
-        el.bulkMoveButtons.appendChild(b);
-      });
+      state.groups.forEach(g=>{ const b=document.createElement('button'); b.className='text-xs bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded font-bold transition'; b.textContent=g.label; b.addEventListener('click',()=>moveSelectedToGroup(g.key)); el.bulkMoveButtons.appendChild(b); });
     }
 
-    // 선택된 카드(+페어 파트너)를 지정 그룹으로 이동 — DOM appendChild만 사용 (재렌더 X)
-    function moveSelectedToGroup(groupKey){
+    function moveSelectedToGroup(gk){
       if(state.selectedIds.size===0){ showToast('선택된 카드가 없습니다.','error'); return; }
-      // 페어 자동 포함
       const ids=new Set(state.selectedIds);
-      state.selectedIds.forEach(id=>{
-        const f=state.files.find(x=>x.id===id);
-        if(f){ const p=getPairPartner(f); if(p) ids.add(p.id); }
-      });
-      const targetGrid=document.querySelector(`.group-grid[data-group="${groupKey}"]`);
-      if(!targetGrid) return;
-
-      // files 순서 유지하며 이동 (순서 보존)
+      state.selectedIds.forEach(id=>{const f=state.files.find(x=>x.id===id); if(f){const p=getPairPartner(f); if(p)ids.add(p.id);}});
+      const grid=document.querySelector(`.group-grid[data-group="${gk}"]`); if(!grid)return;
       let moved=0;
-      state.files.forEach(f=>{
-        if(ids.has(f.id)){
-          f.group=groupKey;
-          const card=document.querySelector(`.omr-card[data-id="${f.id}"]`);
-          if(card){ targetGrid.appendChild(card); moved++; }
-        }
-      });
-
-      state.selectedIds.clear();
-      refreshSelectionUI();
-      refreshCounts();
-      reindexCards();
-      const label = groupKey==='__unassigned' ? '미배정' : (state.groups.find(g=>g.key===groupKey)?.label||'');
-      showToast(`${moved}장을 [${label}](으)로 이동했습니다. (페어 포함)`, 'success');
+      state.files.forEach(f=>{ if(ids.has(f.id)){ f.group=gk; const c=document.querySelector(`.omr-card[data-id="${f.id}"]`); if(c){grid.appendChild(c); moved++;} } });
+      state.selectedIds.clear(); refreshSelectionUI(); syncAllSelVisual(); refreshCounts(); reindexCards();
+      const label=gk==='__unassigned'?'미배정':(state.groups.find(g=>g.key===gk)?.label||'');
+      showToast(`${moved}장을 [${label}](으)로 이동`,'success');
     }
 
-    // 그룹별 장수 갱신
+    function moveIdsToGroup(idArr, gk){
+      const ids=new Set(idArr);
+      idArr.forEach(id=>{const f=state.files.find(x=>x.id===id); if(f){const p=getPairPartner(f); if(p)ids.add(p.id);}});
+      const grid=document.querySelector(`.group-grid[data-group="${gk}"]`); if(!grid)return 0;
+      let moved=0;
+      state.files.forEach(f=>{ if(ids.has(f.id)){ f.group=gk; const c=document.querySelector(`.omr-card[data-id="${f.id}"]`); if(c){grid.appendChild(c); moved++;} } });
+      refreshCounts(); reindexCards();
+      return moved;
+    }
+
     function refreshCounts(){
-      const counts={'__unassigned':0};
-      state.groups.forEach(g=>counts[g.key]=0);
-      state.files.forEach(f=>{ counts[f.group]=(counts[f.group]||0)+1; });
-      document.querySelectorAll('[data-count-for]').forEach(s=>{ s.textContent=counts[s.dataset.countFor]||0; });
-      const poolU=document.querySelector('section .pool-count'); // 미배정 첫 뱃지
-      const uPool=document.querySelector('.group-grid[data-group="__unassigned"]').closest('section').querySelector('.pool-count');
-      if(uPool) uPool.textContent=counts['__unassigned']||0;
+      const counts={'__unassigned':0}; state.groups.forEach(g=>counts[g.key]=0);
+      state.files.forEach(f=>counts[f.group]=(counts[f.group]||0)+1);
+      document.querySelectorAll('[data-count-for]').forEach(s=>s.textContent=counts[s.dataset.countFor]||0);
       el.totalCount.textContent=state.files.length;
       el.unassignedCount.textContent=counts['__unassigned']||0;
     }
-
-    // 카드 좌상단 번호 재부여(시각적 순서) — DOM 순서대로
     function reindexCards(){
       let i=1;
-      // 미배정 → 그룹 순으로 번호
-      const order=[document.querySelector('.group-grid[data-group="__unassigned"]'),
-                   ...state.groups.map(g=>document.querySelector(`.group-grid[data-group="${g.key}"]`))];
-      order.forEach(grid=>{ if(!grid) return; grid.querySelectorAll('.omr-card').forEach(c=>{ const idxEl=c.querySelector('.card-index'); if(idxEl) idxEl.textContent=i++; }); });
+      const grids=[document.querySelector('.group-grid[data-group="__unassigned"]'),...state.groups.map(g=>document.querySelector(`.group-grid[data-group="${g.key}"]`))];
+      grids.forEach(grid=>{ if(!grid)return; grid.querySelectorAll('.omr-card .card-index').forEach(s=>s.textContent=i++); });
     }
 
-    /* ===== 라이트박스 + ✂️ 분할 (방식 A) ===== */
-    // 라이트박스는 "현재 화면 배치 순서" 기준으로 넘김
+    /* ===== Lightbox ===== */
     function visualOrderIds(){
-      const grids=[document.querySelector('.group-grid[data-group="__unassigned"]'),
-                   ...state.groups.map(g=>document.querySelector(`.group-grid[data-group="${g.key}"]`))];
-      const ids=[];
-      grids.forEach(grid=>{ if(!grid) return; grid.querySelectorAll('.omr-card').forEach(c=>ids.push(c.dataset.id)); });
+      const grids=[document.querySelector('.group-grid[data-group="__unassigned"]'),...state.groups.map(g=>document.querySelector(`.group-grid[data-group="${g.key}"]`))];
+      const ids=[]; grids.forEach(grid=>{ if(!grid)return; grid.querySelectorAll('.omr-card').forEach(c=>ids.push(c.dataset.id)); });
       return ids;
     }
-
     function openLightbox(id){
-      const ids=visualOrderIds();
-      const idx=ids.indexOf(id);
-      if(idx<0) return;
-      state.lbIds=ids;
-      state.lightboxIdx=idx;
-      state.zoom=1;
-      renderLightbox();
+      const ids=visualOrderIds(); const idx=ids.indexOf(id); if(idx<0)return;
+      state.lbIds=ids; state.lightboxIdx=idx; state.zoom=1;
+      buildRangeButtons(); renderLightbox();
       el.lightboxModal.classList.remove('hidden'); el.lightboxModal.classList.add('flex');
     }
     function renderLightbox(){
-      const id=state.lbIds[state.lightboxIdx];
-      const f=state.files.find(x=>x.id===id);
-      if(!f) return;
+      const f=state.files.find(x=>x.id===state.lbIds[state.lightboxIdx]); if(!f)return;
+      // 이미지 시도 + 폴백
+      el.lightboxImg.classList.remove('hidden'); el.lightboxFallback.classList.add('hidden');
+      el.lightboxImg.onerror=()=>{ el.lightboxImg.classList.add('hidden'); el.fallbackName.textContent=f.name; el.lightboxFallback.classList.remove('hidden'); };
       el.lightboxImg.src=f.dataUrl;
       el.lightboxFilename.textContent=f.name;
-      const gLabel = f.group==='__unassigned' ? '미배정' : (state.groups.find(g=>g.key===f.group)?.label||'');
-      el.lightboxMeta.textContent=`순서 ${state.lightboxIdx+1}/${state.lbIds.length} · 현재그룹: ${gLabel} · 페어: ${f.pairStatus}`;
-      applyZoom();
-      buildSplitButtons();
+      const gl=f.group==='__unassigned'?'미배정':(state.groups.find(g=>g.key===f.group)?.label||'');
+      el.lightboxMeta.textContent=`순서 ${state.lightboxIdx+1}/${state.lbIds.length} · 현재그룹: ${gl} · 페어: ${f.pairStatus}`;
+      applyZoom(); updateRangeStatus();
     }
-    function navLightbox(dir){
-      const n=state.lightboxIdx+dir;
+    function navLightbox(d){
+      const n=state.lightboxIdx+d;
       if(n<0){ showToast('첫 번째입니다.','info'); return; }
       if(n>=state.lbIds.length){ showToast('마지막입니다.','info'); return; }
-      state.lightboxIdx=n; state.zoom=1; renderLightbox();
+      state.lightboxIdx=n; renderLightbox(); // ★ zoom 유지 (리셋 안 함)
     }
     function closeLightbox(){ el.lightboxModal.classList.add('hidden'); el.lightboxModal.classList.remove('flex'); }
-    function applyZoom(){ el.lightboxImg.style.transform=`scale(${state.zoom})`; }
+    function applyZoom(){ el.lightboxImg.style.width=(state.zoom*100)+'%'; el.lightboxImg.style.maxWidth=state.zoom<=1?'100%':'none'; }
 
-    // ✂️ 분할 버튼: "현재 카드부터 끝까지(다음 경계 전까지) N반으로"
-    // 실무적으로: 현재 카드 이후 연속 구간을 통째로 선택 → 사용자가 누른 그룹으로.
-    // 가장 직관적 동작: "현재 보고 있는 카드부터, 같은(미배정) 영역의 끝까지"를 해당 그룹으로 이동.
-    function buildSplitButtons(){
-      el.lightboxSplitButtons.innerHTML='';
-      const curId=state.lbIds[state.lightboxIdx];
+    /* ===== 반 시작/끝 지정 ===== */
+    function buildRangeButtons(){
+      el.lightboxStartButtons.innerHTML=''; el.lightboxEndButtons.innerHTML='';
       state.groups.forEach(g=>{
-        const b=document.createElement('button');
-        b.className='text-[11px] bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded font-bold transition';
-        b.textContent=g.label;
-        b.addEventListener('click',()=>splitFromHere(curId, g.key));
-        el.lightboxSplitButtons.appendChild(b);
+        const sb=document.createElement('button');
+        sb.className='text-[11px] bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1 rounded font-bold transition';
+        sb.textContent=g.label+' 시작';
+        sb.addEventListener('click',()=>markStart(g.key));
+        el.lightboxStartButtons.appendChild(sb);
+
+        const eb=document.createElement('button');
+        eb.className='text-[11px] bg-rose-600 hover:bg-rose-500 text-white px-2 py-1 rounded font-bold transition';
+        eb.textContent=g.label+' 종료';
+        eb.addEventListener('click',()=>markEnd(g.key));
+        el.lightboxEndButtons.appendChild(eb);
       });
     }
-
-    // 방식 A 핵심: 현재 카드부터 "현재 보이는 순서상 뒤쪽 전부 중, 아직 미배정인 카드"를 해당 그룹으로.
-    // → 앞에서부터 1반, 2반... 순서로 경계를 찍어나가면 자연스럽게 구간 분할됨.
-    function splitFromHere(fromId, groupKey){
-      const ids=visualOrderIds();
-      const start=ids.indexOf(fromId);
-      if(start<0) return;
-      // 현재 카드부터 끝까지 중, group이 '__unassigned'인 것 + 그 페어를 이동
-      const moveSet=new Set();
-      for(let i=start;i<ids.length;i++){
-        const f=state.files.find(x=>x.id===ids[i]);
-        if(f && f.group==='__unassigned'){ moveSet.add(f.id); const p=getPairPartner(f); if(p) moveSet.add(p.id); }
+    function markStart(gk){
+      state.rangeStart={ groupKey:gk, idx:state.lightboxIdx, id:state.lbIds[state.lightboxIdx] };
+      updateRangeStatus();
+      showToast(`${state.groups.find(g=>g.key===gk).label} 시작 지점 표시 — 끝까지 넘긴 뒤 '종료'를 누르세요.`,'info');
+    }
+    function markEnd(gk){
+      if(!state.rangeStart || state.rangeStart.groupKey!==gk){
+        showToast(`먼저 [${state.groups.find(g=>g.key===gk).label} 시작]을 누르세요.`,'error'); return;
       }
-      if(moveSet.size===0){ showToast('이 지점 이후 미배정 카드가 없습니다.','info'); return; }
-
-      const targetGrid=document.querySelector(`.group-grid[data-group="${groupKey}"]`);
-      state.files.forEach(f=>{
-        if(moveSet.has(f.id)){
-          f.group=groupKey;
-          const card=document.querySelector(`.omr-card[data-id="${f.id}"]`);
-          if(card) targetGrid.appendChild(card);
-        }
-      });
-      refreshCounts(); reindexCards();
-      // 라이트박스 갱신(현재 카드의 그룹이 바뀜)
-      const label=state.groups.find(g=>g.key===groupKey)?.label||'';
-      showToast(`이 지점부터 미배정 ${moveSet.size}장을 [${label}](으)로 분할했습니다.`, 'success');
+      const order=state.lbIds;
+      const sIdx=order.indexOf(state.rangeStart.id);
+      const eIdx=state.lightboxIdx;
+      if(sIdx<0){ showToast('시작 지점을 찾을 수 없습니다.','error'); state.rangeStart=null; return; }
+      const [lo,hi]=sIdx<=eIdx?[sIdx,eIdx]:[eIdx,sIdx];
+      const idArr=[]; for(let i=lo;i<=hi;i++) idArr.push(order[i]);
+      const moved=moveIdsToGroup(idArr, gk);
+      const label=state.groups.find(g=>g.key===gk).label;
+      state.rangeStart=null;
+      // 라이트박스 순서 갱신 (그룹 이동으로 시각순서 변동)
+      state.lbIds=visualOrderIds();
+      state.lightboxIdx=Math.min(state.lightboxIdx, state.lbIds.length-1);
       renderLightbox();
+      showToast(`[${label}] 구간 확정: ${moved}장 이동 (페어 포함)`,'success');
+    }
+    function updateRangeStatus(){
+      if(state.rangeStart){
+        const label=state.groups.find(g=>g.key===state.rangeStart.groupKey)?.label||'';
+        const f=state.files.find(x=>x.id===state.rangeStart.id);
+        el.rangeStatus.innerHTML=`<span class="text-amber-300">▶ [${label}] 시작 지정됨 (${f?f.name:''}) — 끝 카드에서 '${label} 종료'를 누르세요.</span>`;
+      } else {
+        el.rangeStatus.textContent='반 구간 지정: 시작 버튼을 누르고 → 넘긴 뒤 → 종료 버튼';
+      }
     }
 
-    /* ===== 초기화 ===== */
     function clearAll(){
       if(!confirm('모든 OMR 파일을 삭제하시겠습니까?')) return;
       state.files.forEach(f=>{ if(f.dataUrl&&f.dataUrl.startsWith('blob:')) URL.revokeObjectURL(f.dataUrl); });
-      state.files=[]; state.selectedIds.clear();
-      renderAll();
-      showToast('초기화되었습니다.','info');
+      state.files=[]; state.selectedIds.clear(); state.rangeStart=null; state.lastClickedId=null;
+      renderAll(); showToast('초기화됨','info');
     }
 
-    /* ===== PDF 출력 ===== */
-    async function startPdfGeneration(){
+    /* ===== PDF ===== */
+    async function startPdf(){
       const mode=el.exportMode.value;
-      el.progressModal.classList.remove('hidden'); el.progressModal.classList.add('flex');
-      el.btnExportPdf.disabled=true;
+      el.progressModal.classList.remove('hidden'); el.progressModal.classList.add('flex'); el.btnExportPdf.disabled=true;
       try{
         if(mode==='groups'){
-          // 그룹별로 각각 PDF (화면 배치 순서대로)
-          const ids=visualOrderIds();
-          const byGroup={};
-          state.groups.forEach(g=>byGroup[g.key]=[]);
-          ids.forEach(id=>{ const f=state.files.find(x=>x.id===id); if(f && f.group!=='__unassigned' && byGroup[f.group]) byGroup[f.group].push(f); });
-          const unassigned=state.files.filter(f=>f.group==='__unassigned').length;
-          if(unassigned>0 && !confirm(`미배정 카드가 ${unassigned}장 있습니다. 미배정은 출력에서 제외됩니다. 계속할까요?`)){
-            el.progressModal.classList.add('hidden'); el.progressModal.classList.remove('flex'); el.btnExportPdf.disabled=false; return;
-          }
-          const nonEmpty=state.groups.filter(g=>byGroup[g.key].length>0);
-          if(nonEmpty.length===0){ showToast('출력할 그룹이 없습니다.','error'); throw new Error('empty'); }
-          for(let i=0;i<nonEmpty.length;i++){
-            const g=nonEmpty[i];
-            el.progressTitle.textContent=`[${g.label}] 생성 중... (${i+1}/${nonEmpty.length})`;
-            await runPdf(byGroup[g.key], `${sanitize(g.label)}.pdf`);
-          }
-          showToast(`${nonEmpty.length}개 그룹 PDF 다운로드 완료!`,'success');
+          const ids=visualOrderIds(); const byG={}; state.groups.forEach(g=>byG[g.key]=[]);
+          ids.forEach(id=>{const f=state.files.find(x=>x.id===id); if(f&&f.group!=='__unassigned'&&byG[f.group])byG[f.group].push(f);});
+          const un=state.files.filter(f=>f.group==='__unassigned').length;
+          if(un>0 && !confirm(`미배정 ${un}장은 출력에서 제외됩니다. 계속할까요?`)){ throw new Error('cancel'); }
+          const ne=state.groups.filter(g=>byG[g.key].length>0);
+          if(!ne.length){ showToast('출력할 그룹이 없습니다.','error'); throw new Error('empty'); }
+          for(let i=0;i<ne.length;i++){ el.progressTitle.textContent=`[${ne[i].label}] 생성 중 (${i+1}/${ne.length})`; await runPdf(byG[ne[i].key], `${sanitize(ne[i].label)}.pdf`); }
+          showToast(`${ne.length}개 그룹 PDF 완료!`,'success');
         } else if(mode==='selected'){
-          const ids=visualOrderIds().filter(id=>state.selectedIds.has(id));
-          const files=ids.map(id=>state.files.find(x=>x.id===id)).filter(Boolean);
-          if(!files.length){ showToast('선택된 항목이 없습니다.','error'); throw new Error('empty'); }
+          const files=visualOrderIds().filter(id=>state.selectedIds.has(id)).map(id=>state.files.find(x=>x.id===id)).filter(Boolean);
+          if(!files.length){ showToast('선택 항목이 없습니다.','error'); throw new Error('empty'); }
           await runPdf(files,'OMR_선택항목.pdf');
         } else {
-          const ids=visualOrderIds();
-          const files=ids.map(id=>state.files.find(x=>x.id===id)).filter(Boolean);
+          const files=visualOrderIds().map(id=>state.files.find(x=>x.id===id)).filter(Boolean);
           await runPdf(files,'OMR_전체.pdf');
         }
-      }catch(err){ if(err.message!=='empty'){ console.error(err); showToast('PDF 생성 중 오류가 발생했습니다.','error'); } }
+      }catch(e){ if(e.message!=='empty'&&e.message!=='cancel'){ console.error(e); showToast('PDF 생성 오류','error'); } }
       finally{ el.progressModal.classList.add('hidden'); el.progressModal.classList.remove('flex'); el.btnExportPdf.disabled=false; el.progressTitle.textContent='처리 중...'; }
     }
-
     function sanitize(s){ return (s||'group').replace(/[\\/:*?"<>|]/g,'_').trim()||'group'; }
 
-    // 원본 file → canvas 리샘플 → JPEG DataURL (PDF 삽입 안정/경량)
     function fileToJpeg(file, maxDim=1654){
       return new Promise((resolve,reject)=>{
-        const url=URL.createObjectURL(file);
-        const img=new Image();
-        img.onload=()=>{
-          let w=img.naturalWidth,h=img.naturalHeight;
-          const s=Math.min(1,maxDim/Math.max(w,h));
-          w=Math.round(w*s); h=Math.round(h*s);
-          const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
-          const ctx=cv.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); ctx.drawImage(img,0,0,w,h);
-          const d=cv.toDataURL('image/jpeg',0.82);
-          URL.revokeObjectURL(url); cv.width=0; cv.height=0;
-          resolve({d,w,h});
-        };
-        img.onerror=e=>{ URL.revokeObjectURL(url); reject(e); };
-        img.src=url;
+        const url=URL.createObjectURL(file); const img=new Image();
+        img.onload=()=>{ let w=img.naturalWidth,h=img.naturalHeight; const s=Math.min(1,maxDim/Math.max(w,h)); w=Math.round(w*s); h=Math.round(h*s);
+          const cv=document.createElement('canvas'); cv.width=w; cv.height=h; const ctx=cv.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); ctx.drawImage(img,0,0,w,h);
+          const d=cv.toDataURL('image/jpeg',0.82); URL.revokeObjectURL(url); cv.width=0; cv.height=0; resolve({d,w,h}); };
+        img.onerror=e=>{ URL.revokeObjectURL(url); reject(e); }; img.src=url;
       });
     }
-
-    async function runPdf(files, outName){
-      const { jsPDF }=window.jspdf;
-      const pdf=new jsPDF('p','pt','a4');
-      const hdr=el.btnPrintHeader.checked;
-      const PW=595.28, PH=841.89;
-      const total=files.length;
-      for(let i=0;i<total;i++){
-        const item=files[i];
-        updateProgress(i+1,total);
-        if(i>0) pdf.addPage();
+    async function runPdf(files,outName){
+      const {jsPDF}=window.jspdf; const pdf=new jsPDF('p','pt','a4'); const hdr=el.btnPrintHeader.checked;
+      const PW=595.28,PH=841.89,total=files.length;
+      for(let i=0;i<total;i++){ const item=files[i]; updateProgress(i+1,total); if(i>0)pdf.addPage();
         let top=20;
-        if(hdr){
-          pdf.setFillColor(248,250,252); pdf.rect(0,0,PW,42,'F');
-          pdf.setFont('helvetica','bold'); pdf.setFontSize(10); pdf.setTextColor(15,23,42);
-          pdf.text(`OMR FILE: ${item.name}`,30,25);
-          pdf.setFont('helvetica','normal'); pdf.setFontSize(8); pdf.setTextColor(148,163,184);
-          pdf.text(`Page ${i+1}/${total}`,PW-95,25);
-          top=50;
-        }
-        const printW=PW-40, printH=PH-top-30;
-        try{
-          const {d,w,h}=await fileToJpeg(item.file);
-          const ratio=w/h; let dw=printW, dh=printW/ratio;
-          if(dh>printH){ dh=printH; dw=printH*ratio; }
-          pdf.addImage(d,'JPEG',(PW-dw)/2,top,dw,dh,undefined,'FAST');
-        }catch(e){ console.error('img fail',item.name,e); pdf.setFontSize(12); pdf.setTextColor(200,0,0); pdf.text(`[Error: ${item.name}]`,50,200); }
+        if(hdr){ pdf.setFillColor(248,250,252); pdf.rect(0,0,PW,42,'F'); pdf.setFont('helvetica','bold'); pdf.setFontSize(10); pdf.setTextColor(15,23,42); pdf.text(`OMR FILE: ${item.name}`,30,25); pdf.setFont('helvetica','normal'); pdf.setFontSize(8); pdf.setTextColor(148,163,184); pdf.text(`Page ${i+1}/${total}`,PW-95,25); top=50; }
+        const pw=PW-40, ph=PH-top-30;
+        try{ const {d,w,h}=await fileToJpeg(item.file); const r=w/h; let dw=pw,dh=pw/r; if(dh>ph){dh=ph;dw=ph*r;} pdf.addImage(d,'JPEG',(PW-dw)/2,top,dw,dh,undefined,'FAST'); }
+        catch(e){ console.error('fail',item.name,e); pdf.setFontSize(12); pdf.setTextColor(200,0,0); pdf.text(`[Error: ${item.name}]`,50,200); }
         if(i%4===0) await new Promise(r=>setTimeout(r,0));
       }
       pdf.save(outName);
     }
-
     function updateProgress(c,t){ const p=Math.round(c/t*100); el.progressBar.style.width=p+'%'; el.progressPercent.textContent=p+'%'; el.progressStatus.textContent=`${c} / ${t}`; }
 
-    let toastTimer=null;
+    let tt=null;
     function showToast(msg,type='success'){
       el.toastText.textContent=msg;
-      const ic={success:'fa-circle-check',error:'fa-circle-xmark',info:'fa-circle-info'};
-      const co={success:'text-emerald-400',error:'text-rose-400',info:'text-sky-400'};
-      el.toastIcon.innerHTML=`<i class="fa-solid ${ic[type]||ic.success} text-lg"></i>`;
-      el.toastIcon.className=co[type]||co.success;
-      el.toast.classList.remove('translate-y-10','opacity-0');
-      clearTimeout(toastTimer);
-      toastTimer=setTimeout(()=>el.toast.classList.add('translate-y-10','opacity-0'),2800);
+      const ic={success:'fa-circle-check',error:'fa-circle-xmark',info:'fa-circle-info'}, co={success:'text-emerald-400',error:'text-rose-400',info:'text-sky-400'};
+      el.toastIcon.innerHTML=`<i class="fa-solid ${ic[type]||ic.success} text-lg"></i>`; el.toastIcon.className=co[type]||co.success;
+      el.toast.classList.remove('translate-y-10','opacity-0'); clearTimeout(tt); tt=setTimeout(()=>el.toast.classList.add('translate-y-10','opacity-0'),2800);
     }
   </script>
 </body>
